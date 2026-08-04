@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Forms;
+using System.IO;
 
 namespace PDFitCompanion.Services
 {

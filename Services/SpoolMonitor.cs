@@ -1,6 +1,8 @@
 using PdfSharpCore.Pdf;
 using PDFitCompanion.Config;
 using Serilog;
+using System;
+using System.IO;
 
 namespace PDFitCompanion.Services
 {

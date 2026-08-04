@@ -1,7 +1,9 @@
 using Supabase;
 using PDFitCompanion.Config;
 using Serilog;
+using System.Net.Http;
 using System.Net.Http.Json;
+using System;
 
 namespace PDFitCompanion.Services
 {
