@@ -8,9 +8,9 @@
         WindowStartupLocation="CenterScreen"
         ShowInTaskbar="False"
         WindowStyle="SingleBorderWindow">
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20">
-        <TextBlock Text="PDFit Companion" FontSize="24" FontWeight="Bold" TextAlignment="Center" Foreground="#333"/>
-        <TextBlock Text="Connecting to PDFit..." FontSize="14" TextAlignment="Center" Foreground="#666"/>
+    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20">
+        <TextBlock Text="PDFit Companion" FontSize="24" FontWeight="Bold" TextAlignment="Center" Foreground="#333" Margin="0,0,0,10"/>
+        <TextBlock Text="Connecting to PDFit..." FontSize="14" TextAlignment="Center" Foreground="#666" Margin="0,0,0,10"/>
         <ProgressBar Height="4" Foreground="#007AFF" IsIndeterminate="True"/>
     </StackPanel>
 </Window>
