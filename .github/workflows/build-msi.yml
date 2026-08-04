@@ -24,36 +24,21 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-          cache: true
-          cache-dependency-path: '**/packages.lock.json'
 
       - name: Install WiX Toolset
         run: |
           dotnet tool install --global wix
           wix --version
 
-      - name: Restore NuGet packages
+      - name: Restore and Build
         run: |
-          cd PDFitCompanion
-          dotnet restore PDFitCompanion.csproj
-          cd ..
-
-      - name: Build application (Release)
-        run: |
-          cd PDFitCompanion
-          dotnet build PDFitCompanion.csproj -c Release -r win-x64 --no-restore -v d
-          cd ..
-
-      - name: Publish application
-        run: |
-          cd PDFitCompanion
-          dotnet publish PDFitCompanion.csproj -c Release -r win-x64 -o ../publish/
-          cd ..
+          dotnet restore PDFitCompanion/PDFitCompanion.csproj
+          dotnet build PDFitCompanion/PDFitCompanion.csproj -c Release -r win-x64 --no-restore
+          dotnet publish PDFitCompanion/PDFitCompanion.csproj -c Release -r win-x64 -o publish/
 
       - name: Build MSI
         run: |
-          cd PDFitCompanion
-          wix build -o ../PDFitCompanion.msi PDFitCompanion.wxs -d PDFitCompanionSourceDir=..\publish\net8.0-windows\win-x64 -v d
+          wix build -o PDFitCompanion.msi PDFitCompanion/PDFitCompanion.wxs -d PDFitCompanionSourceDir=publish/net8.0-windows/win-x64
 
       - name: Upload MSI as artifact
         uses: actions/upload-artifact@v4
