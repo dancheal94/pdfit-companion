@@ -5,9 +5,6 @@ on:
     branches:
       - main
       - release/*
-    paths:
-      - 'PDFitCompanion/**'
-      - '.github/workflows/build-msi.yml'
   workflow_dispatch:
 
 jobs:
@@ -17,8 +14,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
@@ -26,9 +21,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Install WiX Toolset
-        run: |
-          dotnet tool install --global wix
-          wix --version
+        run: dotnet tool install --global wix
 
       - name: Restore and Build
         run: |
@@ -37,28 +30,11 @@ jobs:
           dotnet publish PDFitCompanion.csproj -c Release -r win-x64 -o publish/
 
       - name: Build MSI
-        run: |
-          wix build -o PDFitCompanion.msi PDFitCompanion.wxs -d PDFitCompanionSourceDir=publish/net8.0-windows/win-x64
+        run: wix build -o PDFitCompanion.msi PDFitCompanion.wxs -d PDFitCompanionSourceDir=publish/net8.0-windows/win-x64
 
-      - name: Upload MSI as artifact
+      - name: Upload MSI
         uses: actions/upload-artifact@v4
         with:
           name: PDFitCompanion-Setup
           path: PDFitCompanion.msi
           retention-days: 30
-
-      - name: Create Release (on tags)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: PDFitCompanion.msi
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload to hosting (manual - see DEPLOYMENT.md)
-        run: |
-          echo "MSI built successfully!"
-          echo "Next step: Upload PDFitCompanion.msi to your download server"
-          echo "See DEPLOYMENT.md for instructions"
