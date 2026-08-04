@@ -17,8 +17,7 @@ namespace PDFitCompanion
 
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Information()
-                .WriteTo.File(System.IO.Path.Combine(AppConfig.LogDirectory, "pdfit-companion-.txt"),
-                    rollingInterval: Serilog.Events.RollingInterval.Day)
+                .WriteTo.File(System.IO.Path.Combine(AppConfig.LogDirectory, "pdfit-companion.log"))
                 .CreateLogger();
 
             Log.Information("PDFit Companion starting");
