@@ -26,11 +26,11 @@ jobs:
       - name: Restore and Build
         run: |
           dotnet restore PDFitCompanion.csproj
-          dotnet build PDFitCompanion.csproj -c Release -r win-x64 --no-restore
-          dotnet publish PDFitCompanion.csproj -c Release -r win-x64 -o publish/
+          dotnet build PDFitCompanion.csproj -c Release --no-restore
+          dotnet publish PDFitCompanion.csproj -c Release -o publish/
 
       - name: Build MSI
-        run: wix build -o PDFitCompanion.msi PDFitCompanion.wxs -d PDFitCompanionSourceDir=publish/net8.0-windows/win-x64
+        run: wix build -o PDFitCompanion.msi PDFitCompanion.wxs -d PDFitCompanionSourceDir=publish/net8.0-windows
 
       - name: Upload MSI
         uses: actions/upload-artifact@v4
