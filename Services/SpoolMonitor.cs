@@ -46,9 +46,8 @@ namespace PDFitCompanion.Services
 
         private void InitializeSupabaseService()
         {
-            if (_authService.UserId == null) return;
-            _supabaseService = new SupabaseService(_authService.UserId);
-            _ = _supabaseService.InitializeAsync();
+            if (_authService.UserId == null || _authService.AccessToken == null) return;
+            _supabaseService = new SupabaseService(_authService.UserId, _authService.AccessToken);
         }
 
         private void OnFileCreated(object sender, FileSystemEventArgs e)
@@ -86,9 +85,9 @@ namespace PDFitCompanion.Services
 
                 if (_supabaseService == null)
                 {
-                    if (_authService.UserId == null) throw new InvalidOperationException("User ID not available");
-                    _supabaseService = new SupabaseService(_authService.UserId);
-                    await _supabaseService.InitializeAsync();
+                    if (_authService.UserId == null || _authService.AccessToken == null)
+                        throw new InvalidOperationException("User ID or access token not available");
+                    _supabaseService = new SupabaseService(_authService.UserId, _authService.AccessToken);
                 }
 
                 Log.Information("Processing PDF: {FilePath}", filePath);

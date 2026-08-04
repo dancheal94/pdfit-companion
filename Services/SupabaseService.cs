@@ -1,39 +1,29 @@
 using Supabase;
-using Supabase.Gotrue;
 using PDFitCompanion.Config;
 using Serilog;
+using System.Net.Http.Json;
 
 namespace PDFitCompanion.Services
 {
     public class SupabaseService
     {
-        private Client? _client;
         private readonly string _userId;
+        private readonly string _accessToken;
+        private readonly HttpClient _httpClient;
 
-        public SupabaseService(string userId)
+        public SupabaseService(string userId, string accessToken)
         {
             _userId = userId;
-        }
-
-        public async Task InitializeAsync()
-        {
-            var options = new SupabaseOptions
-            {
-                AutoConnectRealtime = false
-            };
-
-            _client = new Client(AppConfig.SupabaseUrl, AppConfig.SupabaseAnonKey, options);
-            await _client.InitializeAsync();
-            Log.Information("Supabase client initialized");
+            _accessToken = accessToken;
+            _httpClient = new HttpClient();
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+            _httpClient.DefaultRequestHeaders.Add("apikey", AppConfig.SupabaseAnonKey);
         }
 
         public async Task<string?> CreateProjectAsync(string projectName, string? organizationId = null)
         {
             try
             {
-                if (_client?.Realtime == null)
-                    throw new InvalidOperationException("Supabase client not initialized");
-
                 var project = new Dictionary<string, object>
                 {
                     { "name", projectName },
@@ -44,12 +34,15 @@ namespace PDFitCompanion.Services
                 if (!string.IsNullOrEmpty(organizationId))
                     project["organization_id"] = organizationId;
 
-                var response = await _client.From("projects")
-                    .Insert(project)
-                    .Execute();
+                var url = $"{AppConfig.SupabaseUrl}/rest/v1/projects";
+                var response = await _httpClient.PostAsJsonAsync(url, project);
+                response.EnsureSuccessStatusCode();
 
-                Log.Information("Project created: {ProjectName}", projectName);
-                return response.Models?.FirstOrDefault()?.Get("id")?.ToString();
+                var content = await response.Content.ReadAsAsync<List<Dictionary<string, object>>>();
+                var projectId = content?.FirstOrDefault()?["id"]?.ToString();
+
+                Log.Information("Project created: {ProjectName} ({ProjectId})", projectName, projectId);
+                return projectId;
             }
             catch (Exception ex)
             {
@@ -62,16 +55,16 @@ namespace PDFitCompanion.Services
         {
             try
             {
-                if (_client?.Storage == null)
-                    throw new InvalidOperationException("Supabase client not initialized");
-
                 var fileName = $"{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Path.GetFileName(filePath)}";
                 var storagePath = $"{_userId}/{projectId}/{fileName}";
 
                 var fileBytes = await File.ReadAllBytesAsync(filePath);
-                var response = await _client.Storage
-                    .From(AppConfig.StorageBucket)
-                    .Upload(fileBytes, storagePath);
+                var content = new ByteArrayContent(fileBytes);
+                content.Headers.Add("Content-Type", "application/pdf");
+
+                var url = $"{AppConfig.SupabaseUrl}/storage/v1/object/{AppConfig.StorageBucket}/{storagePath}";
+                var response = await _httpClient.PostAsync(url, content);
+                response.EnsureSuccessStatusCode();
 
                 Log.Information("File uploaded: {StoragePath}", storagePath);
                 return storagePath;
@@ -87,9 +80,6 @@ namespace PDFitCompanion.Services
         {
             try
             {
-                if (_client?.Realtime == null)
-                    throw new InvalidOperationException("Supabase client not initialized");
-
                 var media = new Dictionary<string, object>
                 {
                     { "project_id", projectId },
@@ -99,9 +89,9 @@ namespace PDFitCompanion.Services
                     { "created_at", DateTime.UtcNow.ToUniversalTime() }
                 };
 
-                await _client.From("media")
-                    .Insert(media)
-                    .Execute();
+                var url = $"{AppConfig.SupabaseUrl}/rest/v1/media";
+                var response = await _httpClient.PostAsJsonAsync(url, media);
+                response.EnsureSuccessStatusCode();
 
                 Log.Information("Media registered: {FileName} ({PageCount} pages)", fileName, pageCount);
                 return true;
