@@ -17,11 +17,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
 
       - name: Install WiX Toolset
         run: |
@@ -29,18 +33,27 @@ jobs:
           wix --version
 
       - name: Restore NuGet packages
-        run: dotnet restore PDFitCompanion/PDFitCompanion.csproj
+        run: |
+          cd PDFitCompanion
+          dotnet restore PDFitCompanion.csproj
+          cd ..
 
       - name: Build application (Release)
-        run: dotnet build PDFitCompanion/PDFitCompanion.csproj -c Release -r win-x64 --no-restore
+        run: |
+          cd PDFitCompanion
+          dotnet build PDFitCompanion.csproj -c Release -r win-x64 --no-restore -v d
+          cd ..
 
       - name: Publish application
-        run: dotnet publish PDFitCompanion/PDFitCompanion.csproj -c Release -r win-x64 -o publish/
+        run: |
+          cd PDFitCompanion
+          dotnet publish PDFitCompanion.csproj -c Release -r win-x64 -o ../publish/
+          cd ..
 
       - name: Build MSI
         run: |
           cd PDFitCompanion
-          wix build -o ../PDFitCompanion.msi PDFitCompanion.wxs -d PDFitCompanionSourceDir=..\publish\net8.0-windows\win-x64
+          wix build -o ../PDFitCompanion.msi PDFitCompanion.wxs -d PDFitCompanionSourceDir=..\publish\net8.0-windows\win-x64 -v d
 
       - name: Upload MSI as artifact
         uses: actions/upload-artifact@v4
