@@ -1,10 +1,9 @@
-name: Build PDFit Companion MSI
+name: Build PDFit Companion
 
 on:
   push:
     branches:
       - main
-      - release/*
   workflow_dispatch:
 
 jobs:
@@ -20,26 +19,15 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Install WiX Toolset
-        run: |
-          dotnet tool install --global wix
-          wix extension add WixToolset.UI.wixext
-
-      - name: Accept WiX EULA
-        run: wix extension list
-
       - name: Restore and Build
         run: |
           dotnet restore PDFitCompanion.csproj
           dotnet build PDFitCompanion.csproj -c Release --no-restore
           dotnet publish PDFitCompanion.csproj -c Release -o publish/
 
-      - name: Build MSI
-        run: wix build -o PDFitCompanion.msi PDFitCompanion.wxs -d PDFitCompanionSourceDir=publish/net8.0-windows
-
-      - name: Upload MSI
+      - name: Upload Executable
         uses: actions/upload-artifact@v4
         with:
-          name: PDFitCompanion-Setup
-          path: PDFitCompanion.msi
+          name: PDFitCompanion
+          path: publish/PDFitCompanion.exe
           retention-days: 30
