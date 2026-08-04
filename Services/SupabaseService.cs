@@ -25,7 +25,7 @@ namespace PDFitCompanion.Services
             _httpClient.DefaultRequestHeaders.Add("apikey", AppConfig.SupabaseAnonKey);
         }
 
-        public async Task<string> CreateProjectAsync(string projectName, string organizationId = null)
+        public async Task<string?> CreateProjectAsync(string projectName, string? organizationId = null)
         {
             try
             {
@@ -61,7 +61,7 @@ namespace PDFitCompanion.Services
             }
         }
 
-        public async Task<string> UploadFileAsync(string projectId, string filePath)
+        public async Task<string?> UploadFileAsync(string projectId, string filePath)
         {
             try
             {
