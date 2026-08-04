@@ -21,7 +21,12 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Install WiX Toolset
-        run: dotnet tool install --global wix
+        run: |
+          dotnet tool install --global wix
+          wix extension add WixToolset.UI.wixext
+
+      - name: Accept WiX EULA
+        run: wix extension list
 
       - name: Restore and Build
         run: |
