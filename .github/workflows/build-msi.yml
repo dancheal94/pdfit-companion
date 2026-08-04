@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+      - release/*
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -25,9 +28,10 @@ jobs:
           dotnet build PDFitCompanion.csproj -c Release --no-restore
           dotnet publish PDFitCompanion.csproj -c Release -o publish/
 
-      - name: Upload Executable
-        uses: actions/upload-artifact@v4
+      - name: Upload to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
         with:
-          name: PDFitCompanion
-          path: publish/PDFitCompanion.exe
-          retention-days: 30
+          files: publish/PDFitCompanion.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
