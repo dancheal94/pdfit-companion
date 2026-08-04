@@ -11,12 +11,14 @@ namespace PDFitCompanion.Services
     {
         private readonly FileSystemWatcher _watcher;
         private readonly AuthService _authService;
+        private readonly TrayService _trayService;
         private readonly Dictionary<string, DateTime> _processingFiles;
         private SupabaseService _supabaseService;
 
-        public SpoolMonitor(AuthService authService)
+        public SpoolMonitor(AuthService authService, TrayService trayService = null)
         {
             _authService = authService;
+            _trayService = trayService;
             _processingFiles = new Dictionary<string, DateTime>();
 
             _watcher = new FileSystemWatcher(AppConfig.SpoolDirectory)
@@ -37,11 +39,6 @@ namespace PDFitCompanion.Services
             if (_authService.IsAuthenticated && !string.IsNullOrEmpty(_authService.UserId))
             {
                 InitializeSupabaseService();
-            }
-            else
-            {
-                Log.Information("Not authenticated, opening browser for auth");
-                _authService.OpenAuthBrowser();
             }
         }
 
@@ -84,6 +81,7 @@ namespace PDFitCompanion.Services
                 if (!_authService.IsAuthenticated)
                 {
                     Log.Warning("Not authenticated, opening browser");
+                    _trayService?.ShowError("Not Authenticated", "Please sign in to PDFit");
                     _authService.OpenAuthBrowser();
                     return;
                 }
@@ -97,6 +95,7 @@ namespace PDFitCompanion.Services
                 }
 
                 Log.Information("Processing PDF: {FilePath}", filePath);
+                _trayService?.ShowMessage("Processing", "Uploading to PDFit...");
 
                 var fileName = Path.GetFileNameWithoutExtension(filePath);
                 var projectId = await _supabaseService.CreateProjectAsync(fileName);
@@ -110,6 +109,7 @@ namespace PDFitCompanion.Services
 
                 await _supabaseService.RegisterMediaAsync(projectId, storagePath, 1, fileName);
 
+                _trayService?.ShowMessage("Success", $"'{fileName}' is ready to edit in PDFit");
                 Log.Information("PDF processed successfully: {FileName}", fileName);
                 _processingFiles.Remove(filePath);
 
@@ -119,6 +119,7 @@ namespace PDFitCompanion.Services
             catch (Exception ex)
             {
                 Log.Error(ex, "Failed to process PDF: {FilePath}", filePath);
+                _trayService?.ShowError("Upload Failed", ex.Message);
             }
         }
 

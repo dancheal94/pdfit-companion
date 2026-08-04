@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
+using System.Web;
 using Serilog;
 using PDFitCompanion.Config;
 
@@ -17,6 +18,8 @@ namespace PDFitCompanion.Services
         public bool IsAuthenticated => !string.IsNullOrEmpty(_accessToken) && DateTime.UtcNow < _tokenExpiry;
         public string UserId => _userId;
         public string AccessToken => _accessToken;
+
+        public event Action<bool> OnAuthStatusChanged;
 
         public AuthService()
         {
@@ -40,12 +43,25 @@ namespace PDFitCompanion.Services
             }
         }
 
-        public void HandleAuthCallback(string payload)
+        public void HandleAuthCallback(string uriString)
         {
             try
             {
+                Log.Information("Processing auth callback");
+
+                var uri = new Uri(uriString);
+                var query = HttpUtility.ParseQueryString(uri.Query);
+                var payload = query["payload"];
+
+                if (string.IsNullOrEmpty(payload))
+                {
+                    Log.Warning("No payload in auth callback");
+                    return;
+                }
+
+                var decodedPayload = HttpUtility.UrlDecode(payload);
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var json = JsonSerializer.Deserialize<AuthPayload>(payload, options);
+                var json = JsonSerializer.Deserialize<AuthPayload>(decodedPayload, options);
 
                 if (json == null)
                     throw new InvalidOperationException("Invalid auth payload");
@@ -56,11 +72,13 @@ namespace PDFitCompanion.Services
                 _tokenExpiry = DateTime.UtcNow.AddSeconds(3600);
 
                 SaveStoredToken();
+                OnAuthStatusChanged?.Invoke(true);
                 Log.Information("Authentication successful for user: {UserId}", _userId);
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Failed to handle auth callback");
+                OnAuthStatusChanged?.Invoke(false);
             }
         }
 
@@ -79,6 +97,7 @@ namespace PDFitCompanion.Services
                 {
                     _refreshToken = cred.refresh_token;
                     _userId = cred.user_id;
+                    _tokenExpiry = DateTime.UtcNow.AddHours(1);
                     Log.Information("Loaded stored credentials for user: {UserId}", _userId);
                 }
             }
