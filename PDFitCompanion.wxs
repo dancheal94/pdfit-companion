@@ -1,60 +1,88 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
     <Product Id="*" Name="PDFit Companion" Language="1033" Version="1.0.0.0"
-             Manufacturer="PDFit" UpgradeCode="12345678-1234-1234-1234-123456789012">
-        <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+             Manufacturer="PDFit" UpgradeCode="a1b2c3d4-e5f6-4g7h-8i9j-0k1l2m3n4o5p">
+
+        <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine"
+                 Platform="x64" Description="PDFit Companion - Windows Print to PDF"/>
 
         <MediaTemplate EmbedCab="yes" />
 
-        <Property Id="ARPPRODUCTICON" Value="pdfit.ico" />
-        <Icon Id="pdfit.ico" SourceFile="pdfit.ico" />
-
         <Feature Id="ProductFeature" Title="PDFit Companion" Level="1">
             <ComponentRef Id="MainExecutable" />
-            <ComponentRef Id="ProgramMenu" />
+            <ComponentRef Id="StartMenuShortcut" />
+            <ComponentRef Id="ProtocolHandler" />
             <ComponentRef Id="StartupRegistry" />
+            <ComponentRef Id="SpoolFolder" />
         </Feature>
 
         <Directory Id="TARGETDIR" Name="SourceDir">
-            <Directory Id="ProgramFilesFolder">
+            <Directory Id="ProgramFiles64Folder">
                 <Directory Id="INSTALLFOLDER" Name="PDFit" />
             </Directory>
             <Directory Id="ProgramMenuFolder">
                 <Directory Id="ApplicationProgramsFolder" Name="PDFit" />
             </Directory>
-            <Directory Id="CommonAppDataFolder">
+            <Directory Id="LocalAppDataFolder">
                 <Directory Id="PDFitAppData" Name="PDFit" />
             </Directory>
         </Directory>
 
+        <!-- Main executable -->
         <DirectoryRef Id="INSTALLFOLDER">
-            <Component Id="MainExecutable" Guid="*">
-                <File Source="$(var.PDFitCompanion.TargetPath)" KeyPath="yes" />
+            <Component Id="MainExecutable" Guid="*" Win64="yes">
+                <File Source="publish/PDFitCompanion.exe" KeyPath="yes" />
+                <ServiceControl Id="RemoveCompanionService" Name="PDFitCompanion" Stop="both" Remove="uninstall" />
             </Component>
         </DirectoryRef>
 
+        <!-- Start Menu shortcut -->
         <DirectoryRef Id="ApplicationProgramsFolder">
-            <Component Id="ProgramMenu" Guid="*">
-                <Shortcut Id="ProgramMenu" Name="PDFit Companion" Description="Windows Print to PDF Editor"
+            <Component Id="StartMenuShortcut" Guid="*" Win64="yes">
+                <Shortcut Id="ApplicationStartMenuShortcut" Name="PDFit Companion"
+                         Description="Windows Print to PDF Editor"
                          Target="[INSTALLFOLDER]PDFitCompanion.exe" WorkingDirectory="INSTALLFOLDER" />
+                <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+                <RegistryValue Root="HKCU" Key="Software\PDFit\Companion" Name="installed" Type="integer" Value="1" KeyPath="yes" />
             </Component>
         </DirectoryRef>
 
+        <!-- Protocol handler registration -->
         <DirectoryRef Id="TARGETDIR">
-            <Component Id="StartupRegistry" Guid="*">
-                <RegistryKey Root="HKCU"
-                    Key="Software\Microsoft\Windows\CurrentVersion\Run" Action="createAndRemoveOnUninstall">
-                    <RegistryValue Type="string" Name="PDFitCompanion"
-                        Value="[INSTALLFOLDER]PDFitCompanion.exe" />
+            <Component Id="ProtocolHandler" Guid="*" Win64="yes">
+                <RegistryKey Root="HKCU" Key="Software\Classes\pdfit">
+                    <RegistryValue Type="string" Value="URL:PDFit Protocol" />
+                    <RegistryValue Name="URL Protocol" Type="string" Value="" />
+                </RegistryKey>
+                <RegistryKey Root="HKCU" Key="Software\Classes\pdfit\shell\open\command">
+                    <RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]PDFitCompanion.exe&quot; &quot;%1&quot;" />
                 </RegistryKey>
             </Component>
         </DirectoryRef>
 
-        <InstallExecuteSequence>
-            <Custom Action="SetupPrinter" After="InstallFinalize">NOT Installed</Custom>
-        </InstallExecuteSequence>
+        <!-- Startup task -->
+        <DirectoryRef Id="TARGETDIR">
+            <Component Id="StartupRegistry" Guid="*" Win64="yes">
+                <RegistryKey Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run">
+                    <RegistryValue Name="PDFitCompanion" Type="string" Value="[INSTALLFOLDER]PDFitCompanion.exe" />
+                </RegistryKey>
+            </Component>
+        </DirectoryRef>
 
-        <CustomAction Id="SetupPrinter" BinaryKey="SetupPrinter" DllEntry="SetupPrinter"
-                      Execute="deferred" Impersonate="no" />
+        <!-- Spool folder -->
+        <DirectoryRef Id="PDFitAppData">
+            <Directory Id="SpoolDir" Name="Spool" />
+            <Component Id="SpoolFolder" Guid="*" Win64="yes">
+                <CreateFolder />
+                <RemoveFolder Id="RemoveSpoolFolder" On="uninstall" />
+                <RegistryValue Root="HKCU" Key="Software\PDFit\Spool" Name="path" Type="string" Value="[LocalAppDataFolder]PDFit\Spool" KeyPath="yes" />
+            </Component>
+        </DirectoryRef>
+
+        <!-- UI -->
+        <UIRef Id="WixUI_InstallDir" />
+        <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
+        <WixVariable Id="WixUIInstallDirectory" Value="INSTALLFOLDER" />
+
     </Product>
 </Wix>
